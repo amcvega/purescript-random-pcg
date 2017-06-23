@@ -173,10 +173,10 @@ exports.randomIntImpl = function(seed){
          };
 };
 
-var crypto = window.crypto;
-exports.rand64Impl = function(){
-  var array = new Int32Array(2);
-  crypto.getRandomValues(array);
-  return {msb: array[0], lsb: array[1]};
-};
+// var crypto = window.crypto;
+// exports.rand64Impl = function(){
+//   var array = new Int32Array(2);
+//   crypto.getRandomValues(array);
+//   return {msb: array[0], lsb: array[1]};
+// };
 

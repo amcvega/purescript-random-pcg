@@ -1,15 +1,15 @@
 module Random.PCG where
 
-import Unsafe.Coerce (unsafeCoerce)
+-- import Unsafe.Coerce (unsafeCoerce)
 import Prelude
 
-import Control.Monad.Eff (Eff, kind Effect)
-import Control.Monad.State.Trans
+-- import Control.Monad.Eff (Eff, kind Effect)
+import Control.Monad.State.Trans (class MonadTrans, StateT, get, lift, put, runStateT)
 
-import Data.List
-import Data.Tuple
+import Data.List (List, foldM, fromFoldable, range, (:))
+import Data.Tuple (Tuple(..))
 import Data.Array as Array
-import Data.Identity
+import Data.Identity (Identity)
 
 
 
@@ -43,14 +43,14 @@ instance bindGeneratorT :: Monad m => Bind (GeneratorT m) where
 
 instance monadGeneratorT :: Monad m => Monad (GeneratorT m)                                         
 
-foreign import data CRYPTO :: Effect
+-- foreign import data CRYPTO :: Effect
 
-foreign import rand64Impl :: ∀ e. Eff (crypto :: CRYPTO | e) Int64
+-- foreign import rand64Impl :: ∀ e. Eff (crypto :: CRYPTO | e) Int64
 
-randomSeed :: ∀ e. Eff (crypto :: CRYPTO|e) Seed
-randomSeed = do
-  i <- rand64Impl
-  pure $ Seed i.msb i.lsb
+-- randomSeed :: ∀ e. Eff (crypto :: CRYPTO|e) Seed
+-- randomSeed = do
+--   i <- rand64Impl
+--   pure $ Seed i.msb i.lsb
 
 instance showSeed :: Show Seed where
   show (Seed x y) = "Seed " <> show x <> " - " <> show y
@@ -86,7 +86,7 @@ array :: ∀ m a. Monad m
          => Int
          -> GeneratorT m a
          -> GeneratorT m (Array a)
-array n fn = Array.foldM go [] (Array.range 1 4)
+array n fn = Array.foldM go [] (Array.range 1 n)
   where
     go xs _ = do
       res <- fn
@@ -97,7 +97,7 @@ list :: ∀ m a. Monad m
         => Int
         -> GeneratorT m a
         -> GeneratorT m (List a)
-list n fn = foldM go (fromFoldable []) (range 1 4)
+list n fn = foldM go (fromFoldable []) (range 1 n)
   where
     go xs _ = do
       res <- fn
