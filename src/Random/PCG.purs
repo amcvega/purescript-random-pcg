@@ -1,4 +1,4 @@
-module Random.PCG (GeneratorT(..), Seed(..), initialSeed, runRandom, randomInt, array, list) where
+module Random.PCG (GeneratorT(..), Seed(..), initialSeed, runRandom, randomInt, array, list, randomNum) where
 
 import Prelude
 
@@ -11,6 +11,9 @@ import Data.Identity (Identity)
 
 
 data Seed = Seed Int Int
+
+instance eqSeed :: Eq Seed where
+  eq (Seed x1 x2) (Seed y1 y2)  = [x1,x2] == [y1,y2]
 
 -- type Int64 = {msb :: Int, lsb :: Int}
 
@@ -49,8 +52,9 @@ initialSeed :: Tuple Int Int -> Seed
 initialSeed (Tuple x y) = Seed x y
 
 
-foreign import randomIntImpl :: Array Int -> Answer Int
+foreign import randomIntImpl :: State -> Answer Int
 
+foreign import randomNumberImpl :: State -> Answer Number
 -- randomInt :: Seed -> Tuple Int Seed
 -- randomInt (Seed x y) =
 --   let ans = randomIntImpl ( Array.fromFoldable [x,y])
@@ -65,12 +69,19 @@ runRandom (GeneratorT state) = runStateT state
 randomInt :: ∀ m. Monad m => GeneratorT m Int
 randomInt = GeneratorT do
    Seed x y <- get
-   let ans = randomIntImpl (Array.fromFoldable [x,y])
+   let ans = randomIntImpl {hi: x, lo: y} -- (Array.fromFoldable [x,y])
    put $ Seed ans.state.hi ans.state.lo
    pure ans.answer
    -- let Tuple ans seed' = randomInt seed
    -- put seed'
    -- pure ans
+
+randomNum :: ∀ m. Monad m => GeneratorT m Number
+randomNum = GeneratorT do
+  Seed x y <- get
+  let ans = randomNumberImpl {hi: x, lo: y}
+  put $ Seed ans.state.hi ans.state.lo
+  pure ans.answer
 
 -- | Generate an Array of random elements
 array :: ∀ m a. Monad m

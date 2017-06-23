@@ -33,10 +33,11 @@ var PcgRandom = (function() {
 			incHi = 0;
 		}
 
-		this.state_ = new Int32Array([ 0, 0, incHi >>> 0, (incLo|1) >>> 0 ]);
-		this.next_();
-		add64_(this.state_, this.state_[0], this.state_[1], seedHi>>>0, seedLo>>>0);
-		this.next_();
+	    this.state_ = new Int32Array([seedHi, seedLo, incHi >>> 0, (incLo|1) >>> 0 ]);
+            // Removed because this introduces overhead not suitable for functional style
+		// this.next_();
+		// add64_(this.state_, this.state_[0], this.state_[1], seedHi>>>0, seedLo>>>0);
+		// this.next_();
 		return this;
 	};
 
@@ -166,11 +167,21 @@ var PcgRandom = (function() {
 // }
 
 exports.randomIntImpl = function(seed){
-  var pcg = new PcgRandom(seed[0], seed[1]);
-  var state = pcg.getState();
-  return {answer: pcg.integer(),
-          state: {hi: state[0], lo: state[1]}
-         };
+    var pcg = new PcgRandom(seed.hi, seed.lo);
+    var ans = pcg.integer();
+    var state = pcg.getState();
+    return {answer: ans,
+            state: {hi: state[0], lo: state[1]}
+           };
+};
+
+exports.randomNumberImpl = function(seed){
+    var pcg = new PcgRandom(seed.hi, seed.lo);
+    var ans = pcg.number();
+    var state = pcg.getState();
+    return {answer: ans,
+            state: {hi: state[0], lo: state[1]}
+           };
 };
 
 // var crypto = window.crypto;
