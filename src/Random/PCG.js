@@ -128,14 +128,14 @@ var PcgRandom = (function() {
 		return ((xorshifted >>> rot) | (xorshifted << rot2)) >>> 0;
 	};
 
-	/// Get a uniformly distributed 32 bit integer between [0, max).
+	/// Get a uniformly distributed 32 bit integer
 	PcgRandom.prototype.integer = function(max) {
 		if (!max) {
 			return this.next_()|0;
 		}
 		max = max >>> 0;
 		if ((max & (max - 1)) === 0) {
-			return this.next_() & (max - 1); // fast path for power of 2
+			return (this.next_() & (max - 1))|0; // fast path for power of 2
 		}
 
 		var num = 0;
@@ -144,7 +144,7 @@ var PcgRandom = (function() {
 			// this loop will rarely execute more than twice,
 			// and is intentionally empty
 		}
-		return num % max;
+		return (num % max)|0;
 	};
 
 	var BIT_53 = 9007199254740992.0;

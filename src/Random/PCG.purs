@@ -1,9 +1,7 @@
-module Random.PCG where
+module Random.PCG (GeneratorT(..), Seed(..), initialSeed, runRandom, randomInt, array, list) where
 
--- import Unsafe.Coerce (unsafeCoerce)
 import Prelude
 
--- import Control.Monad.Eff (Eff, kind Effect)
 import Control.Monad.State.Trans (class MonadTrans, StateT, get, lift, put, runStateT)
 
 import Data.List (List, foldM, fromFoldable, range, (:))
@@ -12,18 +10,14 @@ import Data.Array as Array
 import Data.Identity (Identity)
 
 
-
 data Seed = Seed Int Int
 
-type Int64 = {msb :: Int, lsb :: Int}
+-- type Int64 = {msb :: Int, lsb :: Int}
 
--- newtype Generator a = Generator {seed :: Seed}
 newtype GeneratorT m a = GeneratorT (StateT Seed m a)
 
 type Generator a = GeneratorT Identity a
 
--- instance bindGenerator :: Bind Generator where
---   bind (GeneratorT s) fn = 
 instance monadTransGeneratorT :: MonadTrans GeneratorT where
   lift m = GeneratorT $ lift m
   
@@ -34,7 +28,7 @@ instance applyGeneratorT :: Monad m => Apply (GeneratorT m) where
   apply (GeneratorT f) (GeneratorT v) = GeneratorT $ f <*> v
 
 instance applicativeGeneratorT :: Monad m => Applicative (GeneratorT m) where
-  pure x = GeneratorT $ pure x
+  pure = GeneratorT <<< pure 
 
   
 instance bindGeneratorT :: Monad m => Bind (GeneratorT m) where
@@ -43,15 +37,6 @@ instance bindGeneratorT :: Monad m => Bind (GeneratorT m) where
 
 instance monadGeneratorT :: Monad m => Monad (GeneratorT m)                                         
 
--- foreign import data CRYPTO :: Effect
-
--- foreign import rand64Impl :: ∀ e. Eff (crypto :: CRYPTO | e) Int64
-
--- randomSeed :: ∀ e. Eff (crypto :: CRYPTO|e) Seed
--- randomSeed = do
---   i <- rand64Impl
---   pure $ Seed i.msb i.lsb
-
 instance showSeed :: Show Seed where
   show (Seed x y) = "Seed " <> show x <> " - " <> show y
 
@@ -59,29 +44,35 @@ type State = {hi :: Int, lo :: Int}
 
 type Answer a = { answer :: a, state :: State }
 
+
 initialSeed :: Tuple Int Int -> Seed
 initialSeed (Tuple x y) = Seed x y
 
 
 foreign import randomIntImpl :: Array Int -> Answer Int
 
-randomInt :: Seed -> Tuple Int Seed
-randomInt (Seed x y) =
-  let ans = randomIntImpl ( Array.fromFoldable [x,y])
-  in Tuple (ans.answer) (Seed ans.state.hi ans.state.lo)
+-- randomInt :: Seed -> Tuple Int Seed
+-- randomInt (Seed x y) =
+--   let ans = randomIntImpl ( Array.fromFoldable [x,y])
+--   in Tuple (ans.answer) (Seed ans.state.hi ans.state.lo)
 
 
+-- |Run a generator with a given seed. Returns a Tuple of result and seed.
 runRandom :: ∀ m a. GeneratorT m a -> Seed -> m (Tuple a Seed)
 runRandom (GeneratorT state) = runStateT state
 
-randInt :: ∀ m. Monad m => GeneratorT m Int
-randInt = GeneratorT do
-   seed <- get
-   let Tuple ans seed' = randomInt seed
-   put seed'
-   pure ans
+-- | Generate random integer
+randomInt :: ∀ m. Monad m => GeneratorT m Int
+randomInt = GeneratorT do
+   Seed x y <- get
+   let ans = randomIntImpl (Array.fromFoldable [x,y])
+   put $ Seed ans.state.hi ans.state.lo
+   pure ans.answer
+   -- let Tuple ans seed' = randomInt seed
+   -- put seed'
+   -- pure ans
 
-
+-- | Generate an Array of random elements
 array :: ∀ m a. Monad m
          => Int
          -> GeneratorT m a
@@ -93,6 +84,7 @@ array n fn = Array.foldM go [] (Array.range 1 n)
       pure (Array.cons res xs)
 
 
+-- | Generate a list of random elements
 list :: ∀ m a. Monad m
         => Int
         -> GeneratorT m a
